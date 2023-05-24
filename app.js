@@ -15,7 +15,7 @@ window.addEventListener('hashchange', function() {
   ajax.send();
 
   const newsContent = JSON.parse(ajax.response);
-  const title = document.createElement('h1');
+  const title = document.createElement('h3');
 
   title.innerHTML = newsContent.title;
   content.appendChild(title);
@@ -23,15 +23,19 @@ window.addEventListener('hashchange', function() {
 })
 
 for (let i = 0; i < 10; i++) {
+  const div = document.createElement('div');
   const li = document.createElement('li');
   const a = document.createElement('a');
 
-  a.href=`#${newsFeed[i].id}`;
-  a.innerHTML = `${newsFeed[i].title} (${newsFeed[i].comments_count})`;
-  
-  a.addEventListener('click', function() {});
-  li.appendChild(a);
-  ul.appendChild(li);  
+  div.innerHTML = `
+  <li>
+    <a href="#${newsFeed[i].id}">
+    ${newsFeed[i].title} (${newsFeed[i].comments_count})
+    </a>
+  </li>
+  `;
+
+  ul.appendChild(div.children[0]);  
 }
 
 container.appendChild(ul);
