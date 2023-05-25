@@ -3,43 +3,75 @@ const ajax = new XMLHttpRequest();
 const content = document.createElement('div');
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json';
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json';
+const store = {
+  currentPage: 1,
+  maxPage: 3
+};
+
 
 function getData(url) {
   ajax.open('GET', url, false);
   ajax.send();
-
   return JSON.parse(ajax.response);
 }
 
-const newsFeed = getData(NEWS_URL);
-const ul = document.createElement('ul');
 
-window.addEventListener('hashchange', function() {
-  const id = location.hash.substr(1);
+/* Show news list */
+function newsFeed() {
+  const newsFeed = getData(NEWS_URL);
+  const ul = document.createElement('ul');
+  const newsList = [];
+  newsList.push('<ul>');
 
-  const newsContent = getData(CONTENT_URL.replace('@id', id));
-  const title = document.createElement('h3');
+  for (let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
+    newsList.push(`
+    <li>
+      <a href="#${newsFeed[i].id}">
+      ${newsFeed[i].title} (${newsFeed[i].comments_count})
+      </a>
+    </li>
+    `);
+  }
 
-  title.innerHTML = newsContent.title;
-  content.appendChild(title);
-  console.log(newsContent);
-})
-
-for (let i = 0; i < 10; i++) {
-  const div = document.createElement('div');
-  const li = document.createElement('li');
-  const a = document.createElement('a');
-
-  div.innerHTML = `
-  <li>
-    <a href="#${newsFeed[i].id}">
-    ${newsFeed[i].title} (${newsFeed[i].comments_count})
-    </a>
-  </li>
-  `;
-
-  ul.appendChild(div.children[0]);  
+  newsList.push('</ul>');
+  newsList.push(`
+  <div>
+  <a href="#/page/${store.currentPage > 1 ? store.currentPage - 1 : 1}"> 이전 페이지 </a>
+  <a href="#/page/${store.currentPage + 1}"> 다음 페이지 </a>
+  </div>
+  `);
+  
+  container.innerHTML = newsList.join('')
 }
 
-container.appendChild(ul);
-container.appendChild(content);
+
+/* Show detail news */
+function newsDetail() {
+  const id = location.hash.substr(7);
+  const newsContent = getData(CONTENT_URL.replace('@id', id));
+
+  container.innerHTML = `
+  <h1>${newsContent.title}</h1>
+  <div>
+    <a href="#/page/${store.currentPage}">Go Home</a>
+  </div>
+  `;
+}
+
+
+/* router */
+function router() {
+  const routePath = location.hash;
+
+  if (routePath === '') {
+    newsFeed();
+  } else if (routePath.indexOf('#/page/') >= 0) {
+    store.currentPage = Number(routePath.substr(7));
+    newsFeed();
+  } else {
+    newsDetail();
+  }
+}
+
+window.addEventListener('hashchange', router);
+router();
