@@ -35,35 +35,45 @@ const store: Store = {
   feeds: [],
 };
 
+function applyApiMixins(targetClass: any, baseClass: any[]): void {
+  baseClass.forEach(baseClass => {
+    Object.getOwnPropertyNames(baseClass.prototype).forEach(name => {
+      const descriptor = Object.getOwnPropertyDescriptor(baseClass.prototype, name);
+
+      if (descriptor) {
+        Object.defineProperty(targetClass.prototype, name, descriptor);
+      }
+    })
+  });
+}
+
 class Api {
-  ajax: XMLHttpRequest;
-  url: string;
-
-  constructor(url: string) {
-    this.ajax = new XMLHttpRequest();
-    this.url = url;
-  }
-
-  protected getRequest<AjaxResponse>(): AjaxResponse {
-    this.ajax.open('GET', this.url, false);
-    this.ajax.send();
+  getRequest<AjaxResponse>(url: string): AjaxResponse {
+    const ajax = new XMLHttpRequest();
+    ajax.open('GET', url, false);
+    ajax.send();
     
-    return JSON.parse(this.ajax.response);
+    return JSON.parse(ajax.response);
   }
 }
 
-class NewsFeedApi extends Api {
+class NewsFeedApi {
   getData(): NewsFeed[] {
-    return this.getRequest<NewsFeed[]>();
+    return this.getRequest<NewsFeed[]>(NEWS_URL);
   }
 }
 
-class NewsDetailApi extends Api {
-  getData(): NewsDetail {
-    return this.getRequest<NewsDetail>();
+class NewsDetailApi {
+  getData(id: string): NewsDetail {
+    return this.getRequest<NewsDetail>(CONTENT_URL.replace('@id', id));
   }
 }
 
+interface NewsFeedApi extends Api {};
+interface NewsFeedDetail extends Api {};
+
+applyApiMixins(NewsFeedApi, [Api]);
+applyApiMixins(NewsDetailApi, [Api]);
 
 /* Init feeds */
 function makeFeeds(feeds: NewsFeed[]): NewsFeed[] {
@@ -87,7 +97,7 @@ function updateView(html: string): void {
 
 /* Show news list */
 function newsFeed(): void {
-  let api = new NewsFeedApi(NEWS_URL);
+  let api = new NewsFeedApi();
   let newsFeed: NewsFeed[] = store.feeds;
   const newsList: string[] = [];
   let template: string = `
@@ -178,8 +188,8 @@ function makeComment(comments: NewsComment[]): string {
 /* Show detail news */
 function newsDetail() {
   const id = location.hash.substr(7);
-  const api = new NewsDetailApi(CONTENT_URL.replace('@id"', id));
-  const newsDetail = api.getData();
+  const api = new NewsDetailApi();
+  const newsDetail = api.getData(id);
   let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
       <div class="bg-white text-xl">
